@@ -114,23 +114,23 @@ export default function RunDetail() {
 
       {/* Model info & Context */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {run.model_info && (
+        {(run.model_info || run.model) && (
           <div className="rounded-lg border border-border bg-card p-5">
             <h2 className="text-sm uppercase tracking-wider text-muted-foreground font-medium mb-3">
               Model Info
             </h2>
             <pre className="text-xs font-mono text-foreground whitespace-pre-wrap overflow-auto max-h-60">
-              {JSON.stringify(run.model_info, null, 2)}
+              {JSON.stringify(run.model_info || run.model, null, 2)}
             </pre>
           </div>
         )}
-        {run.context_metadata && (
+        {(run.context_metadata || run.context_meta) && (
           <div className="rounded-lg border border-border bg-card p-5">
             <h2 className="text-sm uppercase tracking-wider text-muted-foreground font-medium mb-3">
               Context Metadata
             </h2>
             <pre className="text-xs font-mono text-foreground whitespace-pre-wrap overflow-auto max-h-60">
-              {JSON.stringify(run.context_metadata, null, 2)}
+              {JSON.stringify(run.context_metadata || run.context_meta, null, 2)}
             </pre>
           </div>
         )}
