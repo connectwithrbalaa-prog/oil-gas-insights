@@ -1,4 +1,4 @@
-const API_BASE = "https://72.62.231.202";
+const API_BASE = "/backend";
 
 const headers: HeadersInit = {
   "x-dev-user": "admin",
