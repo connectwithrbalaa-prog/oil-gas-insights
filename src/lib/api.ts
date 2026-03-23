@@ -25,7 +25,10 @@ export interface RcaRun {
   recommendations?: string[];
   pm_suggestions?: string[];
   model_info?: Record<string, unknown>;
+  model?: Record<string, unknown>;
   context_metadata?: Record<string, unknown>;
+  context_meta?: Record<string, unknown>;
+  date?: string;
   [key: string]: unknown;
 }
 
