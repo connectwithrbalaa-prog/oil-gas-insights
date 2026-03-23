@@ -16,6 +16,7 @@ export default {
       fontFamily: {
         sans: ["Inter", "sans-serif"],
         mono: ["JetBrains Mono", "monospace"],
+        display: ["Orbitron", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -77,6 +78,11 @@ export default {
           DEFAULT: "hsl(var(--info))",
           foreground: "hsl(var(--info-foreground))",
         },
+        "chart-amber": "hsl(var(--chart-amber))",
+        "chart-teal": "hsl(var(--chart-teal))",
+        "chart-blue": "hsl(var(--chart-blue))",
+        "chart-red": "hsl(var(--chart-red))",
+        "chart-green": "hsl(var(--chart-green))",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -93,14 +99,19 @@ export default {
           to: { height: "0" },
         },
         "pulse-glow": {
-          "0%, 100%": { opacity: "1" },
-          "50%": { opacity: "0.6" },
+          "0%, 100%": { opacity: "1", boxShadow: "0 0 6px currentColor" },
+          "50%": { opacity: "0.5", boxShadow: "0 0 12px currentColor" },
+        },
+        "fade-in": {
+          from: { opacity: "0", transform: "translateY(8px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
+        "fade-in": "fade-in 0.4s ease-out forwards",
       },
     },
   },
