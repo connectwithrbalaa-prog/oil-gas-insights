@@ -13,6 +13,27 @@ async function apiFetch<T>(path: string): Promise<T> {
   return res.json();
 }
 
+// Raw API response shape
+interface RawRun {
+  run_id: string;
+  status: string;
+  event_id?: string;
+  title: string;
+  summary: string;
+  confidence: number;
+  hypothesis?: string[];
+  immediate_actions?: string[];
+  pm_suggestions?: string[];
+  model?: Record<string, unknown>;
+  context_meta?: {
+    asset_id: string;
+    severity: string;
+    [key: string]: unknown;
+  };
+  date?: string;
+  [key: string]: unknown;
+}
+
 export interface RcaRun {
   id: string;
   asset_id: string;
@@ -25,11 +46,25 @@ export interface RcaRun {
   recommendations?: string[];
   pm_suggestions?: string[];
   model_info?: Record<string, unknown>;
-  model?: Record<string, unknown>;
   context_metadata?: Record<string, unknown>;
-  context_meta?: Record<string, unknown>;
-  date?: string;
   [key: string]: unknown;
+}
+
+function mapRun(raw: RawRun): RcaRun {
+  return {
+    id: raw.run_id,
+    asset_id: raw.context_meta?.asset_id ?? raw.run_id,
+    severity: raw.context_meta?.severity ?? "unknown",
+    summary: raw.summary || raw.title,
+    confidence_score: raw.confidence,
+    created_at: raw.date ?? new Date().toISOString(),
+    status: raw.status,
+    findings: raw.hypothesis,
+    recommendations: raw.immediate_actions,
+    pm_suggestions: raw.pm_suggestions,
+    model_info: raw.model,
+    context_metadata: raw.context_meta,
+  };
 }
 
 export interface HierarchyNode {
@@ -51,8 +86,14 @@ export interface FailureEvent {
 }
 
 export const api = {
-  getRuns: () => apiFetch<RcaRun[]>("/api/v1/portal/runs"),
-  getRunDetail: (id: string) => apiFetch<RcaRun>(`/api/v1/portal/runs/${id}`),
+  getRuns: async () => {
+    const raw = await apiFetch<RawRun[]>("/api/v1/portal/runs");
+    return raw.map(mapRun);
+  },
+  getRunDetail: async (id: string) => {
+    const raw = await apiFetch<RawRun>(`/api/v1/portal/runs/${id}`);
+    return mapRun(raw);
+  },
   getHierarchy: () => apiFetch<HierarchyNode[]>("/api/v1/hierarchy"),
   getFailureEvents: () => apiFetch<FailureEvent[]>("/api/v1/failure-events"),
 };
