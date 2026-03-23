@@ -3,7 +3,8 @@ import {
   Search,
   Network,
   AlertTriangle,
-  Wrench,
+  Gauge,
+  Radio,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -17,6 +18,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
+  SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
 
@@ -33,47 +35,73 @@ export function AppSidebar() {
   const location = useLocation();
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border">
-      <SidebarHeader className="p-4 border-b border-border">
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
+      <SidebarHeader className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
-            <Wrench className="w-4 h-4 text-primary-foreground" />
+          <div className="relative w-9 h-9 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-center">
+            <Gauge className="w-5 h-5 text-primary" />
+            <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-success status-indicator animate-pulse-glow" />
           </div>
           {!collapsed && (
             <div>
-              <p className="text-sm font-semibold text-foreground">MaintAI</p>
-              <p className="text-xs text-muted-foreground">Intelligence Portal</p>
+              <p className="text-sm font-display font-semibold tracking-wider text-foreground">
+                MAINT<span className="text-primary">AI</span>
+              </p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                Intelligence Portal
+              </p>
             </div>
           )}
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="pt-2">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground">
-            Navigation
+          <SidebarGroupLabel className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground px-4 mb-1">
+            Operations
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end={item.url === "/"}
-                      className="hover:bg-muted/50 transition-colors"
-                      activeClassName="bg-primary/10 text-primary font-medium border-r-2 border-primary"
-                    >
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {navItems.map((item) => {
+                const isActive =
+                  item.url === "/"
+                    ? location.pathname === "/"
+                    : location.pathname.startsWith(item.url);
+
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
+                        end={item.url === "/"}
+                        className="relative flex items-center gap-3 px-4 py-2.5 rounded-md text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent transition-all duration-200"
+                        activeClassName="bg-primary/10 text-primary border-l-2 border-primary"
+                      >
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        {!collapsed && (
+                          <span className="text-sm font-medium">{item.title}</span>
+                        )}
+                        {isActive && !collapsed && (
+                          <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary status-indicator" />
+                        )}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+      <SidebarFooter className="p-4 border-t border-sidebar-border">
+        {!collapsed && (
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+            <Radio className="w-3 h-3 text-success animate-pulse-glow" />
+            <span className="uppercase tracking-wider">System Online</span>
+          </div>
+        )}
+      </SidebarFooter>
     </Sidebar>
   );
 }
