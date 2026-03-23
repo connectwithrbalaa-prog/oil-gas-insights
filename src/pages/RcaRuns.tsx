@@ -4,7 +4,7 @@ import { CardSkeleton } from "@/components/Skeletons";
 import { EmptyState } from "@/components/EmptyState";
 import { SeverityBadge } from "@/components/SeverityBadge";
 import { useNavigate } from "react-router-dom";
-import { Search } from "lucide-react";
+import { Search, ArrowRight, Crosshair } from "lucide-react";
 
 export default function RcaRuns() {
   const { data, isLoading, isError } = useQuery({
@@ -14,11 +14,16 @@ export default function RcaRuns() {
   const navigate = useNavigate();
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-foreground mb-1">RCA Runs</h1>
-      <p className="text-muted-foreground text-sm mb-6">
-        Root cause analysis runs across all monitored assets
-      </p>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <Crosshair className="w-5 h-5 text-primary" />
+          RCA Runs
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Root cause analysis runs across all monitored assets
+        </p>
+      </div>
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -29,7 +34,7 @@ export default function RcaRuns() {
       ) : isError || !data ? (
         <EmptyState
           title="Unable to load RCA runs"
-          description="There was an error fetching data from the server. Please try again later."
+          description="There was an error fetching data from the server."
         />
       ) : data.length === 0 ? (
         <EmptyState
@@ -39,20 +44,24 @@ export default function RcaRuns() {
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {data.map((run) => (
+          {data.map((run, i) => (
             <div
               key={run.id}
-              className="rounded-lg border border-border bg-card p-5 hover:border-primary/40 transition-all cursor-pointer group"
+              className="panel p-5 hover:border-primary/30 transition-all cursor-pointer group animate-fade-in"
+              style={{ animationDelay: `${i * 50}ms` }}
               onClick={() => navigate(`/rca-runs/${run.id}`)}
             >
               <div className="flex items-start justify-between mb-3">
-                <span className="text-sm font-mono font-medium text-foreground">
-                  {run.asset_id}
-                </span>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-primary status-indicator" />
+                  <span className="text-sm font-mono font-medium text-foreground">
+                    {run.asset_id}
+                  </span>
+                </div>
                 <SeverityBadge severity={run.severity} />
               </div>
 
-              <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+              <p className="text-sm text-muted-foreground line-clamp-2 mb-4 leading-relaxed">
                 {run.summary}
               </p>
 
@@ -60,19 +69,20 @@ export default function RcaRuns() {
                 <div className="flex items-center gap-3">
                   {run.confidence_score != null && (
                     <span className="text-xs font-mono text-primary">
-                      {Math.round(run.confidence_score * 100)}% confidence
+                      {Math.round(run.confidence_score * 100)}%
                     </span>
                   )}
                 </div>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-[10px] text-muted-foreground font-mono">
                   {new Date(run.created_at).toLocaleDateString()}
                 </span>
               </div>
 
-              <div className="mt-3 pt-3 border-t border-border">
+              <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
                 <span className="text-xs text-primary font-medium group-hover:underline">
-                  View Details →
+                  View Details
                 </span>
+                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
               </div>
             </div>
           ))}
