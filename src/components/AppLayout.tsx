@@ -13,7 +13,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <SidebarTrigger className="text-muted-foreground hover:text-primary transition-colors" />
               <div className="h-4 w-px bg-border" />
               <span className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground font-mono">
-                Maintenance Intelligence Portal
+                Gulf Coast Processing Plant
               </span>
             </div>
             <div className="flex items-center gap-3">

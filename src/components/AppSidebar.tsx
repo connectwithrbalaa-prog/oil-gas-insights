@@ -95,10 +95,27 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-4 border-t border-sidebar-border">
-        {!collapsed && (
-          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-            <Radio className="w-3 h-3 text-success animate-pulse-glow" />
-            <span className="uppercase tracking-wider">System Online</span>
+        {!collapsed ? (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-[10px] font-bold text-primary">
+                JR
+              </div>
+              <div>
+                <p className="text-[11px] font-medium text-foreground">J. Rodriguez</p>
+                <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Operations Lead</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+              <Radio className="w-3 h-3 text-success animate-pulse-glow" />
+              <span className="uppercase tracking-wider">System Online</span>
+            </div>
+          </div>
+        ) : (
+          <div className="flex justify-center">
+            <div className="w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-[10px] font-bold text-primary">
+              JR
+            </div>
           </div>
         )}
       </SidebarFooter>
