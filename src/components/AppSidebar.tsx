@@ -5,6 +5,10 @@ import {
   AlertTriangle,
   Gauge,
   Radio,
+  ShieldAlert,
+  BarChart3,
+  Activity,
+  Wrench,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -27,6 +31,13 @@ const navItems = [
   { title: "RCA Runs", url: "/rca-runs", icon: Search },
   { title: "Equipment", url: "/equipment", icon: Network },
   { title: "Failure Events", url: "/failure-events", icon: AlertTriangle },
+];
+
+const analysisItems = [
+  { title: "Asset Risk", url: "/bad-actors", icon: ShieldAlert },
+  { title: "RCA Outcomes", url: "/rca-outcomes", icon: BarChart3 },
+  { title: "Signals", url: "/signals", icon: Activity },
+  { title: "PM Proposals", url: "/pm-proposals", icon: Wrench },
 ];
 
 export function AppSidebar() {
@@ -74,6 +85,39 @@ export function AppSidebar() {
                       <NavLink
                         to={item.url}
                         end={item.url === "/"}
+                        className="relative flex items-center gap-3 px-4 py-2.5 rounded-md text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent transition-all duration-200"
+                        activeClassName="bg-primary/10 text-primary border-l-2 border-primary"
+                      >
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        {!collapsed && (
+                          <span className="text-sm font-medium">{item.title}</span>
+                        )}
+                        {isActive && !collapsed && (
+                          <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary status-indicator" />
+                        )}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground px-4 mb-1">
+            Analysis
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {analysisItems.map((item) => {
+                const isActive = location.pathname.startsWith(item.url);
+
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
                         className="relative flex items-center gap-3 px-4 py-2.5 rounded-md text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent transition-all duration-200"
                         activeClassName="bg-primary/10 text-primary border-l-2 border-primary"
                       >

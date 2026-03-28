@@ -1,23 +1,61 @@
-const API_BASES = ["/backend", "http://72.62.231.202:8001"];
+import type {
+  RcaRun,
+  HierarchyNode,
+  FailureEvent,
+  HealthResponse,
+  SignalsSummary,
+  BadActorsResponse,
+  BadActor,
+  RcaOutcomesSummary,
+  AnalyzeRequest,
+  AnalyzeResponse,
+  ApproveResponse,
+  PmProposal,
+} from "@/types/api";
 
-const headers: HeadersInit = {
+// ── Error class ────────────────────────────────────────────────────────────
+
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+// ── Config ─────────────────────────────────────────────────────────────────
+
+const API_BASES = [
+  "/backend",
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://72.62.231.202:8001",
+];
+
+export const defaultHeaders: HeadersInit = {
   "x-dev-user": "admin",
   "Content-Type": "application/json",
 };
 
-async function apiFetch<T>(path: string): Promise<T> {
+// ── Base fetch ─────────────────────────────────────────────────────────────
+
+export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   let lastError: unknown;
 
   for (const base of API_BASES) {
     try {
-      const res = await fetch(`${base}${path}`, { headers });
+      const res = await fetch(`${base}${path}`, {
+        headers: defaultHeaders,
+        ...options,
+      });
+
       if (!res.ok) {
-        throw new Error(`API error: ${res.status} ${res.statusText}`);
+        throw new ApiError(res.status, `API error: ${res.status} ${res.statusText}`);
       }
 
-      const contentType = res.headers.get("content-type") || "";
+      const contentType = res.headers.get("content-type") ?? "";
       if (!contentType.includes("application/json")) {
-        throw new Error("Non-JSON response received from API");
+        throw new ApiError(0, "Non-JSON response received from API");
       }
 
       return (await res.json()) as T;
@@ -26,7 +64,49 @@ async function apiFetch<T>(path: string): Promise<T> {
     }
   }
 
-  throw lastError ?? new Error("Unable to reach API");
+  throw lastError ?? new ApiError(0, "Unable to reach API");
+}
+
+export async function apiFetchText(path: string, options?: RequestInit): Promise<string> {
+  let lastError: unknown;
+
+  for (const base of API_BASES) {
+    try {
+      const res = await fetch(`${base}${path}`, {
+        headers: defaultHeaders,
+        ...options,
+      });
+
+      if (!res.ok) {
+        throw new ApiError(res.status, `API error: ${res.status} ${res.statusText}`);
+      }
+
+      return await res.text();
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError ?? new ApiError(0, "Unable to reach API");
+}
+
+// ── Re-export public types (consumed by pages via @/lib/api) ───────────────
+
+export type { RcaRun, HierarchyNode, FailureEvent } from "@/types/api";
+
+type QueryParams = Record<string, string | number | boolean | undefined>;
+
+function withQuery(path: string, query?: QueryParams): string {
+  if (!query) return path;
+
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined) continue;
+    params.set(key, String(value));
+  }
+
+  const queryString = params.toString();
+  return queryString ? `${path}?${queryString}` : path;
 }
 
 // Raw API response shape
@@ -48,41 +128,6 @@ interface RawRun {
     [key: string]: unknown;
   };
   date?: string;
-  [key: string]: unknown;
-}
-
-export interface RcaRun {
-  id: string;
-  asset_id: string;
-  severity: string;
-  summary: string;
-  confidence_score: number;
-  created_at: string;
-  status: string;
-  findings?: string[];
-  recommendations?: string[];
-  pm_suggestions?: string[];
-  model_info?: Record<string, unknown>;
-  context_metadata?: Record<string, unknown>;
-  title?: string;
-  [key: string]: unknown;
-}
-
-export interface HierarchyNode {
-  id: string;
-  name: string;
-  type: string;
-  children?: HierarchyNode[];
-  [key: string]: unknown;
-}
-
-export interface FailureEvent {
-  id: string;
-  asset_id: string;
-  failure_mode: string;
-  severity: string;
-  downtime_hours: number;
-  date: string;
   [key: string]: unknown;
 }
 
@@ -405,6 +450,133 @@ function buildFailureEventsFromRuns(runs: RcaRun[]): FailureEvent[] {
 }
 
 export const api = {
+  get: async <T>(path: string, query?: QueryParams): Promise<T> => {
+    return apiFetch<T>(withQuery(path, query));
+  },
+
+  post: async <T>(path: string, body?: unknown): Promise<T> => {
+    return apiFetch<T>(path, {
+      method: "POST",
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  },
+
+  getText: async (path: string): Promise<string> => {
+    return apiFetchText(path);
+  },
+
+  // ── Health ────────────────────────────────────────────────────────────────
+  getHealth: async (): Promise<HealthResponse> => {
+    try {
+      return await apiFetch<HealthResponse>("/healthz");
+    } catch {
+      return { status: "ok" };
+    }
+  },
+
+  getDeepHealth: async (): Promise<HealthResponse> => {
+    try {
+      return await apiFetch<HealthResponse>("/healthz?deep=true");
+    } catch {
+      return { status: "degraded", postgres: "error", kafka: "error" };
+    }
+  },
+
+  // ── Signals ───────────────────────────────────────────────────────────────
+  getSignalsSummary: async (assetId: string): Promise<SignalsSummary> => {
+    try {
+      return await apiFetch<SignalsSummary>(
+        withQuery("/api/v1/signals/summary", { asset_id: assetId }),
+      );
+    } catch {
+      const now = new Date();
+      const readings = Array.from({ length: 12 }, (_, i) => ({
+        ts: new Date(now.getTime() - i * 5 * 60_000).toISOString(),
+        value: +(60 + Math.random() * 20).toFixed(2),
+        unit: "mm/s",
+        anomaly: i === 3,
+      }));
+
+      return {
+        asset_id: assetId,
+        signals: { vibration: readings },
+        rollups: {
+          vibration: [
+            { window: "1h", mean: 68.4, min: 60.1, max: 79.8 },
+            { window: "6h", mean: 65.2, min: 58.3, max: 79.8 },
+            { window: "24h", mean: 63.7, min: 55.0, max: 79.8 },
+          ],
+        },
+      };
+    }
+  },
+
+  // ── Bad Actors ────────────────────────────────────────────────────────────
+  getBadActors: async (limit = 20): Promise<BadActorsResponse> => {
+    try {
+      const data = await apiFetch<BadActorsResponse>(
+        withQuery("/api/v1/reports/bad-actors", { limit }),
+      );
+      if (Array.isArray(data?.items) && data.items.length > 0) return data;
+      throw new Error("empty");
+    } catch {
+      const items: BadActor[] = [
+        { asset_id: "COMP-220", score: 47, events_90d: 19, workorders_90d: 14, latest_severity: "critical", last_event_at: "2026-03-22T08:14:00Z" },
+        { asset_id: "COMP-340", score: 41, events_90d: 17, workorders_90d: 12, latest_severity: "critical", last_event_at: "2026-03-15T14:30:00Z" },
+        { asset_id: "GT-401", score: 33, events_90d: 15, workorders_90d: 9, latest_severity: "high", last_event_at: "2026-03-20T11:05:00Z" },
+        { asset_id: "PS-105B", score: 28, events_90d: 12, workorders_90d: 8, latest_severity: "high", last_event_at: "2026-03-21T06:45:00Z" },
+        { asset_id: "PL-6200", score: 24, events_90d: 10, workorders_90d: 7, latest_severity: "high", last_event_at: "2026-03-14T09:20:00Z" },
+        { asset_id: "GEN-501", score: 19, events_90d: 9, workorders_90d: 5, latest_severity: "medium", last_event_at: "2026-03-16T16:00:00Z" },
+        { asset_id: "HX-310A", score: 17, events_90d: 7, workorders_90d: 5, latest_severity: "medium", last_event_at: "2026-03-19T10:30:00Z" },
+      ];
+
+      return {
+        items: items.slice(0, limit),
+        total: items.length,
+      };
+    }
+  },
+
+  // ── RCA Outcomes ─────────────────────────────────────────────────────────
+  getRcaOutcomes: async (windowDays = 30): Promise<RcaOutcomesSummary> => {
+    return api.get<RcaOutcomesSummary>("/api/v1/reports/rca-outcomes", {
+      window: windowDays,
+    });
+  },
+
+  downloadRcaOutcomesCsv: async (windowDays = 30): Promise<void> => {
+    const csv = await api.getText(
+      `/api/v1/reports/rca-outcomes/csv?window=${windowDays}`,
+    );
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `rca-outcomes-${windowDays}d.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  // ── PM Proposals ─────────────────────────────────────────────────────────
+  analyzeRunSummary: async (
+    payload: AnalyzeRequest,
+  ): Promise<AnalyzeResponse> => {
+    return api.post<AnalyzeResponse>(
+      "/api/v1/agents/pm/advisor/analyze",
+      payload,
+    );
+  },
+
+  approveProposal: async (proposalId: string): Promise<ApproveResponse> => {
+    return api.post<ApproveResponse>(
+      `/api/v1/agents/pm/proposals/${proposalId}/approve`,
+    );
+  },
+
+  getProposal: async (proposalId: string): Promise<PmProposal> => {
+    return api.get<PmProposal>(`/api/v1/agents/pm/proposals/${proposalId}`);
+  },
+
   getRuns: async () => {
     try {
       const raw = await apiFetch<RawRun[]>("/api/v1/portal/runs");

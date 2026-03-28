@@ -9,6 +9,10 @@ import RcaRuns from "./pages/RcaRuns";
 import RunDetail from "./pages/RunDetail";
 import EquipmentHierarchy from "./pages/EquipmentHierarchy";
 import FailureEvents from "./pages/FailureEvents";
+import BadActors from "./pages/BadActors";
+import RcaOutcomes from "./pages/RcaOutcomes";
+import Signals from "./pages/Signals";
+import PmProposals from "./pages/PmProposals";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +30,10 @@ const App = () => (
             <Route path="/rca-runs/:id" element={<RunDetail />} />
             <Route path="/equipment" element={<EquipmentHierarchy />} />
             <Route path="/failure-events" element={<FailureEvents />} />
+            <Route path="/bad-actors" element={<BadActors />} />
+            <Route path="/rca-outcomes" element={<RcaOutcomes />} />
+            <Route path="/signals" element={<Signals />} />
+            <Route path="/pm-proposals" element={<PmProposals />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>
